@@ -10,7 +10,7 @@ Numerical evaluation of strongly oscillatory integrals of the form
 \end{equation}
 $$ -->
 
-![Equation](https://latex.codecogs.com/svg.image?%5Chat%7Bf%7D(y)=%5Cint_a%5Eb%5Crm%7Bd%7Dx%5C;e%5E%7B%5Cpm%20i%20x%5Ccdot%20y%7Df(x).)
+![Equation](https://latex.codecogs.com/svg.image?%5Cbg%7Bwhite%7D%7B%5Ccolor%7BWhite%7D%5Chat%7Bf%7D(y)=%5Cint_a%5Eb%5Crm%7Bd%7Dx%5C;e%5E%7B%5Cpm%20i%20x%5Ccdot%20y%7Df(x).%7D)
 
 using an interpolation based approximation introduced in [Numerical Recipies](http://numerical.recipes/). With an appropriate truncation, this can in particular be applied to Fourier transforms, both regular ones, and Matsubara versions. The focus of this module is on an implementation that yields a fast and accurate approximation to continuous Fourier transforms, using in place mutation and FFT-plans. 
 
