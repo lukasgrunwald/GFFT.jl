@@ -1,10 +1,5 @@
 using GFFT
 using Test
-using Aqua
 
-@testset "GFFT.jl" begin
-    @testset "Code quality (Aqua.jl)" begin
-        Aqua.test_all(GFFT; ambiguities = false,)
-    end
-    # Write your tests here.
-end
+@testset "interface test" begin include("interface_test.jl") end
+@testset "convergence test" begin include("convergence_test.jl") end
