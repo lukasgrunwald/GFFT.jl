@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - master
-    tags: ['*']
   pull_request:
   workflow_dispatch:
 concurrency:
@@ -20,6 +19,7 @@ jobs:
       matrix:
         version:
           - '1.7'
+          - '1.9'
         os:
           - ubuntu-latest
         arch:
@@ -33,30 +33,3 @@ jobs:
       - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      statuses: write
-    steps:
-      - uses: actions/checkout@v3
-      - uses: julia-actions/setup-julia@v1
-        with:
-          version: '1'
-      - name: Configure doc environment
-        run: |
-          julia --project=docs/ -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()'
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-docdeploy@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: |
-          julia --project=docs -e '
-            using Documenter: DocMeta, doctest
-            using GFFT
-            DocMeta.setdocmeta!(GFFT, :DocTestSetup, :(using GFFT); recursive=true)
-            doctest(GFFT)'
