@@ -449,9 +449,9 @@ end
 
 function __init__()
     # Switch to mkl backend if not already done before!
-    if FFTW.get_provider() != "mkl"
-        FFTW.set_provider!("mkl")
-    end
+    # if FFTW.get_provider() != "mkl"
+    #     FFTW.set_provider!("mkl")
+    # end
 end
 
 end
