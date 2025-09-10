@@ -1,6 +1,6 @@
 module GFFT
 
-export gfft_data, gfft!, gfft
+export GfftData, gfft!, gfft
 export fftshift, fftshift_odd, fftshift_odd!
 
 using Base.Threads: @threads
@@ -13,7 +13,7 @@ import Dierckx.Spline1D
 # ————————————————————————————— Structs and setup functions ———————————————————————————— #
 
 """
-    gfft_data{FType, TI<:Integer, TF<:Real}
+    GfftData{FType, TI<:Integer, TF<:Real}
 
 Container for gfft!-data that makes repeated application fast.
 
@@ -40,7 +40,7 @@ Container for gfft!-data that makes repeated application fast.
 - `W::Vector{Float64}`: Attenuation factors used for Spline-FFT.
 - `A::Matrix{ComplexF64}`: Boundary corrections for Spline-FFT.
 """
-struct gfft_data{FType,TI<:Integer,TF<:Real}
+struct GfftData{FType,TI<:Integer,TF<:Real}
     method::Symbol # Method to use for the FFT
     sgn::TI # sign in ĥ(y) = ∫ₐᵇ dx exp(sgn⋅ixy)h(x)
 
@@ -66,9 +66,9 @@ struct gfft_data{FType,TI<:Integer,TF<:Real}
 end
 
 """
-    gfft_data(sgn; N, r, a, b, method)
+    GfftData(sgn; N, r, a, b, method)
 
-Constructor for gfft_data struct, that contains FFT-data. `sgn` describes which transform is caluclated.
+Constructor for GfftData struct, that contains FFT-data. `sgn` describes which transform is caluclated.
 
 Numerically calculate `ĥ(y) = ∫ₐᵇ dx exp(sgn⋅ixy)h(x)` for many values of y.
 The resulting argument-array y of a FFT is: \\
@@ -82,13 +82,13 @@ The resulting argument-array y of a FFT is: \\
 - `method{:spl3 (default), :trap, :riem}:` Method used for the FFT
 - `eps::Float64:` Crossover value, at which we switch between the analytical \
  expression and the Taylor expansion
-- `return:` gfft_data struct
+- `return:` GfftData struct
 """
-function gfft_data(sgn::Integer; N::Integer, r::Integer,
+function GfftData(sgn::Integer; N::Integer, r::Integer,
                    a::Real, b::Real, method::Symbol=:spl3, eps::Real=0.11)
-    (a >= b) && error("gfft_data: Invalid boundaries (a,b)!")
-    (sgn != 1 && sgn != -1) && error("gfft_data: sgn=$sgn invalid option!")
-    (method ∉ [:spl3, :trap, :riem]) && error("gfft_data: Invalid method=$(method)!")
+    (a >= b) && error("GfftData: Invalid boundaries (a,b)!")
+    (sgn != 1 && sgn != -1) && error("GfftData: sgn=$sgn invalid option!")
+    (method ∉ [:spl3, :trap, :riem]) && error("GfftData: Invalid method=$(method)!")
 
     Nr = r * N
     Nh = N ÷ 2
@@ -98,7 +98,7 @@ function gfft_data(sgn::Integer; N::Integer, r::Integer,
     dx = (b - a) / N
 
     if method == :spl3
-        W, A = FFTWeights(x, sgn * dx; eps)
+        W, A = generate_fft_weights(x, sgn * dx; eps)
     else # (method == :trap || method == :riem)
         W, A = zeros(Float64, 0), zeros(ComplexF64, 0, 0)
     end
@@ -115,13 +115,13 @@ function gfft_data(sgn::Integer; N::Integer, r::Integer,
     end
     @. pad_container = 0.0 + 0.0im # Reset everything to 0
 
-    obj = gfft_data(method, sgn, N, Nh, Nr, Nrh, r, float(a), float(b), float(dx),
+    obj = GfftData(method, sgn, N, Nh, Nr, Nrh, r, float(a), float(b), float(dx),
                     x, ea, eb, Mfft, pad_container, W, A)
     return obj
 end
 
 """
-    FFTWeights(x::Vector{<:AbstractFloat}, delta::Real; eps::Real=5.0e-2)
+    generate_fft_weights(x::Vector{<:AbstractFloat}, delta::Real; eps::Real=5.0e-2)
 
 Generate W and A for the cubic spline-FFT. See numerical-recipies for definition of coeffs
 (http://numerical.recipes/book.html).
@@ -131,7 +131,7 @@ Generate W and A for the cubic spline-FFT. See numerical-recipies for definition
     and the Taylor expansion (default experimentally found to optimze error)
 - `return:` W, A where A[:, i] is the i-th boundary correction
 """
-function FFTWeights(x::Vector{<:AbstractFloat}, delta::Real; eps::Real=0.11)
+function generate_fft_weights(x::Vector{<:AbstractFloat}, delta::Real; eps::Real=0.11)
 
     N = length(x)
     W = Vector{Float64}(undef, N)
@@ -188,7 +188,7 @@ end
 
 # ————————————————————————————————— Application of FFT ————————————————————————————————— #
 """
-    gfftCorr!(sgn, hy, endpts, param, Isort, method)
+    apply_correction!(sgn, hy, endpts, param, Isort, method)
 
 Apply corrections to hy, for cubic-spline fft (:spl3) or trapezoidal-fft (:trap)correction.
 If `Isort=true`, one needs to multiply the data with `ea`.
@@ -198,7 +198,7 @@ If `Isort=true`, one needs to multiply the data with `ea`.
 - `method{:spl3(default), :trap, :riem}:` Method endpoint corrections
 - `return`: nothing
 """
-function gfftCorr!(f::AbstractVector, endpts::AbstractVector, param::gfft_data, Isort::Bool,
+function apply_correction!(f::AbstractVector, endpts::AbstractVector, param::GfftData, Isort::Bool,
                    method::Symbol)
     @unpack sgn, a, b, r, dx = param
     @unpack W, A, ea, eb = param
@@ -253,7 +253,7 @@ function gfftCorr!(f::AbstractVector, endpts::AbstractVector, param::gfft_data, 
 end
 
 """
-    gfft!(hy, hx; param::gfft_data, kwargs...)
+    gfft!(hy, hx; param::GfftData, kwargs...)
     gfft!(sgn, hy, hx; a, b, r, kwargs...)
 
 Numerically calculate ``ĥ(y) = ∫ₐᵇ dx exp(sgn⋅ixy)h(x)`` for many values of y.
@@ -264,9 +264,9 @@ Note: Isort, Osort decides wether input/output are ordered or in
 the "FFT-ordering" `(0, ..., x_{N/2-1}, x_{-N/2}, ..., x_{-1}, x_{N/2})``
 
 # Arguments
-In iterative version (provides gfft_data) only:
+In iterative version (provides GfftData) only:
 - `sgn::Int:` sgn = ±1 in ``h(y) = ∫ₐᵇ dx exp(sgn⋅ixy)h(x)`` (+1: fft (t->ω) and -1: ifft (ω->t))
-- `param::gfft_data` Struct generated with gfft_data
+- `param::GfftData` Struct generated with GfftData
 
 In standalone-version only:
 - `r:` Pading ratio (sinc(x) interpolation of the data)
@@ -280,12 +280,12 @@ General:
     `:nearest` approximates `h(N/2)≈h(N/2-1)` while `:spl3` uses k=3 extrapolation. Matsubara
     uses `:spl3` for the final point (different because of ordering)
 - `method{:spl3, :trap, :riem}:` Method to use for calculating FT
- (usually set when generating gfft_data).
+ (usually set when generating GfftData).
 
 - `return:` nothing
 """
 function gfft!(hy::AbstractVector{ComplexF64}, hx::AbstractVector{ComplexF64};
-               param::gfft_data,
+               param::GfftData,
                Isort::Bool = true, Osort::Bool = true,
                boundary::Symbol = :nearest, method::Symbol = param.method)
     @unpack N, Nh, Nr, Nrh, r = param
@@ -329,7 +329,7 @@ function gfft!(hy::AbstractVector{ComplexF64}, hx::AbstractVector{ComplexF64};
         end
     end
 
-    gfftCorr!((@view hy[1:Nr]), hboundary, param, Isort, method)
+    apply_correction!((@view hy[1:Nr]), hboundary, param, Isort, method)
 
     # Calculate endpoint that is left out by fft procedure
     if boundary == :nearest # Approximate by previous value
@@ -371,7 +371,7 @@ function gfft!(sgn::Integer, hy::AbstractVector{ComplexF64}, hx::AbstractVector{
     N = length(hx) - 1
     @assert iseven(N)
 
-    param = gfft_data(sgn; N, r, a, b, method)
+    param = GfftData(sgn; N, r, a, b, method)
     gfft!(hy, hx; param, Isort, Osort, boundary)
 
     return nothing
@@ -389,7 +389,7 @@ Note: Isort, Osort decides wether input/output are ordered or in
 the "FFT-ordering" `(0, ..., x_{N/2-1}, x_{-N/2}, ..., x_{-1}, x_{N/2})``
 
 # Arguments
-In iterative version (provides gfft_data) only:
+In iterative version (provides GfftData) only:
 - `sgn::Int:` sgn = ±1 in ``h(y) = ∫ₐᵇ dx exp(sgn⋅ixy)h(x)`` (+1: fft (t->ω) and -1: ifft (ω->t))
 - `r:` Pading ratio (sinc(x) interpolation of the data)
 - `a, b:` Lower and upper bound of w array (No fftshift!)
@@ -399,7 +399,7 @@ In iterative version (provides gfft_data) only:
     `:nearest` approximates `h(N/2)≈h(N/2-1)` while `:spl3` uses k=3 extrapolation. Matsubara
     uses `:spl3` for the final point (different because of ordering)
 - `method{:spl3, :trap, :riem}:` Method to use for calculating FT
- (usually set when generating gfft_data).
+ (usually set when generating GfftData).
 
 - `return:` nothing
 """
@@ -414,6 +414,22 @@ function gfft(sgn::Integer, hx::AbstractVector{ComplexF64};
     gfft!(sgn, hy, hx; a, b, r, Isort, Osort, method, boundary)
 
     return hy
+end
+
+function gfft(sgn, times, hx; r = 1, method = :spl3, boundary = :nearest)
+    # gfft! Only implemented for odd inputs!
+    flag = isodd(length(hx))
+    _hx = flag ? hx : @view hx[1:end-1]
+    _times = flag ? times : @view times[1:end-1]
+
+    N = length(_hx) - 1
+    hy = Vector{ComplexF64}(undef, r * N + 1)
+
+    a, b = _times[1], _times[end]
+    y = 2π / (r * (b - a)) * (-r*N/2:1:r*N/2) |> collect
+    gfft!(sgn, hy, complex.(_hx); a, b, r, Isort = true, Osort = true, method, boundary)
+
+    return y, hy
 end
 
 # —————————————————————————————————— Helper functions —————————————————————————————————— #
