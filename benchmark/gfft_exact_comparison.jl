@@ -15,7 +15,7 @@ function compare_fftmethods(ht, hw; N, r, a, b, showfunction=false, save=false)
     htj = ht.(t)
 
     hriem, htrap, hsp3 = (zeros(CF64, r * N + 1) for i = 1:3)
-    Offt = gfft_data(+1; N=N, r=r, a=a, b=b, method=:spl3)
+    Offt = GfftData(+1; N=N, r=r, a=a, b=b, method=:spl3)
     gfft!(hriem, complex(htj); param=Offt, Isort=true, Osort=true, method=:riem, boundary=:nearest)
     gfft!(htrap, complex(htj); param=Offt, Isort=true, Osort=true, method=:trap, boundary=:nearest)
     gfft!(hsp3, complex(htj); param=Offt, Isort=true, Osort=true, method=:spl3, boundary=:nearest)
@@ -67,9 +67,9 @@ function compare_imagTime(; save=false)
     k = 0:N    # Imaginary time discretization
     τ = β / N .* k
 
-    pfft_spl3 = gfft_data(+1; N=N, r=1, a=0, b=β, method=:spl3)
-    pfft_trap = gfft_data(+1; N=N, r=1, a=0, b=β, method=:trap)
-    pfft_riem = gfft_data(+1; N=N, r=1, a=0, b=β, method=:riem)
+    pfft_spl3 = GfftData(+1; N=N, r=1, a=0, b=β, method=:spl3)
+    pfft_trap = GfftData(+1; N=N, r=1, a=0, b=β, method=:trap)
+    pfft_riem = GfftData(+1; N=N, r=1, a=0, b=β, method=:riem)
 
     ϕ₊ = cis.(π / N * k) # phase for fermionic fft
     ϕ₋ = conj.(ϕ₊)

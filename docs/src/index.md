@@ -11,14 +11,14 @@ Documentation for [GFFT](https://github.com/lukasgrunwald/GFFT.jl), that numeric
 \end{equation}
 ```
 
-using an interpolation based approximation scheme. With an appropriate truncation, this can in particular be applied to Fourier transforms, both regular ones, and Matsubara versions. The focus of this module is on an implementation that yields a fast and accurate approximation to continuous Fourier transforms, using in place mutation and FFT-plans. 
+using an interpolation based approximation scheme. With an appropriate truncation, this can in particular be applied to Fourier transforms, both regular ones, and Matsubara versions. The focus of this module is on an implementation that yields a fast and accurate approximation to continuous Fourier transforms, using in place mutation and FFT-plans.
 
 # Getting Started
 
-The main functionality oft this library is implemented by the [gfft!](@ref gfft) function, that evaluates (1) using an interpolation based approximation scheme, explained in the theory section. Next to the interpolation based scheme we provide other discretization schemes 
+The main functionality oft this library is implemented by the [gfft!](@ref gfft) function, that evaluates (1) using an interpolation based approximation scheme, explained in the theory section. Next to the interpolation based scheme we provide other discretization schemes
 - `:riem`: Riemann sum
 - `:trap`: Trapezoidal rule
-- `:spl3`: Spline-Interpolation scheme (third order), see Numerical recipies. This approach is in particular exact for polynomials up to 3rd-order. 
+- `:spl3`: Spline-Interpolation scheme (third order), see Numerical recipies. This approach is in particular exact for polynomials up to 3rd-order.
 
 A minimal working example, in which we numerically calculate the oscillatory integral $\hat{f}(\omega) = \int_{-5}^{13} \text{d}t \; e^{i \omega t} e^{-t^2} \sinh(3t)$, reads
 
@@ -45,7 +45,7 @@ Instead of directly calculating the Fourier transform, we can also preallocate t
 ```julia
 # [...] (Definitions above)
 fw2 = Vector{ComplexF64}(undef, N + 1) # container for output
-Offt = gfft_data(+1; N=N, r = 1, a=a, b=b, method = :spl3) # gfft_data struct, containig FFT plan etc.
+Offt = GfftData(+1; N=N, r = 1, a=a, b=b, method = :spl3) # GfftData struct, containig FFT plan etc.
 gfft!(fw2, ft; param=Offt)
 
 fw2 == fw # true

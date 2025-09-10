@@ -10,7 +10,7 @@ method, boundary = :spl3, :nearest
 Isort, Osort = true, false
 
 h1, h2 = (zeros(ComplexF64, r * N + 1) for _ in 1:2)
-obj = gfft_data(+1; N, r, a, b, method)
+obj = GfftData(+1; N, r, a, b, method)
 gfft!(h1, htj; param = obj, Isort = Isort, Osort = Osort, method, boundary)
 
 @btime gfft!($h1, $htj; param = $obj, Isort = $Isort, Osort = $Osort, method = $:(method),

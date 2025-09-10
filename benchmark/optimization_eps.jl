@@ -16,7 +16,7 @@ function optimize_eps(eps_array, ht, hw; N, r, a, b)
 
     for eps in eps_array
         hwj = zeros(ComplexF64, r * N + 1)
-        Offt = gfft_data(+1; N=N, r=r, a=a, b=b, eps)
+        Offt = GfftData(+1; N=N, r=r, a=a, b=b, eps)
         gfft!(complex(hwj), complex(htj); param=Offt, Isort=true, Osort=true)
 
         temp = maximum(x->isnan(x) ? -Inf : x, @views @. abs(hwj[1:end-1] - hw(w)))

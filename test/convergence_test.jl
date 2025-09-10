@@ -51,7 +51,7 @@ hw3(w) = 2exp(4im * w) / w^4 * (27w * (2im + (8 - 43im * w) * w) * cos(9w) +
 
     for (i, meth) in enumerate([:spl3, :trap, :riem])
         @testset "$meth" begin
-            pfft = gfft_data(+1; N=N, r=1, a=0, b=β, method=meth)
+            pfft = GfftData(+1; N=N, r=1, a=0, b=β, method=meth)
             gfft!(Σ, (ϕ₊ .* Στ), param=pfft, Isort=true, Osort=false, boundary=:spl3)
             gfft!(Π, complex(Πτ), param=pfft, Isort=true, Osort=false, boundary=:spl3)
 
@@ -80,7 +80,7 @@ end
         hw_ref = hw.(w)
 
         hwj = zeros(ComplexF64, r * N + 1)
-        Offt = gfft_data(+1; N=N, r=r, a=a, b=b, method=:spl3)
+        Offt = GfftData(+1; N=N, r=r, a=a, b=b, method=:spl3)
         gfft!(complex(hwj), complex(htj); param=Offt, Isort=true, Osort=true, method=:spl3, boundary=:spl3)
 
         δ = @. abs(hwj[1:end-1] .- hw_ref)
@@ -111,7 +111,7 @@ fw = gfft(+1, ft; a, b, method = :spl3)
 
 # Preallocated version
 fw2 = Vector{ComplexF64}(undef, N + 1) # container for output
-Offt = gfft_data(+1; N=N, r = 1, a=a, b=b) # gfft_data struct, containig FFT plan etc.
+Offt = GfftData(+1; N=N, r = 1, a=a, b=b) # GfftData struct, containig FFT plan etc.
 gfft!(fw2, ft; param=Offt)
 
 fw2 == fw # true

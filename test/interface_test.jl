@@ -25,8 +25,8 @@ end
 
     for meth in [:spl3, :trap, :riem]
         @testset "$meth" begin
-            pfft = gfft_data(+1; N=N, r=r, a=a, b=b, method=meth)
-            ipfft = gfft_data(-1; N=N, r=r, a=a, b=b, method=meth)
+            pfft = GfftData(+1; N=N, r=r, a=a, b=b, method=meth)
+            ipfft = GfftData(-1; N=N, r=r, a=a, b=b, method=meth)
 
             gfft!(hp1, htj; param=pfft, Isort=true, method=meth, boundary=:nearest)
             gfft!(hm1, htj; param=ipfft, Isort=true, method=meth, boundary=:nearest)
@@ -55,7 +55,7 @@ end
     h_repeated, h_inplace = (zeros(ComplexF64, r * N + 1) for i = 1:2)
 
     for method in [:spl3, :trap, :riem], boundary in [:spl3, :nearest]
-        Offt = gfft_data(+1; N, r, a, b, method)
+        Offt = GfftData(+1; N, r, a, b, method)
         gfft!(h_repeated, x; param=Offt, Isort, Osort, method, boundary)
         gfft!(sgn, h_inplace, x; a, b, r, Isort, Osort, method, boundary)
         h_external = gfft(sgn, x; a, b, r, Isort, Osort, method, boundary)
