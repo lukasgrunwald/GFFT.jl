@@ -416,20 +416,36 @@ function gfft(sgn::Integer, hx::AbstractVector{ComplexF64};
     return hy
 end
 
-function gfft(sgn, times, hx; r = 1, method = :spl3, boundary = :nearest)
+function generate_freq_array(x, r)
+    _x = isodd(length(x)) ? x : @view x[1:end-1]
+
+    N = length(_x) - 1
+    a, b = _x[1], _x[end]
+    y = 2π / (r * (b - a)) * (-r*N/2:1:r*N/2) |> collect
+
+    return y
+end
+
+function gfft(sgn, x::AbstractArray, hx::AbstractArray; r = 1, method = :spl3, boundary = :nearest)
     # gfft! Only implemented for odd inputs!
     flag = isodd(length(hx))
     _hx = flag ? hx : @view hx[1:end-1]
-    _times = flag ? times : @view times[1:end-1]
+    _x = flag ? x : @view x[1:end-1]
 
-    N = length(_hx) - 1
-    hy = Vector{ComplexF64}(undef, r * N + 1)
-
-    a, b = _times[1], _times[end]
+    N = length(_x) - 1
+    a, b = _x[1], _x[end]
     y = 2π / (r * (b - a)) * (-r*N/2:1:r*N/2) |> collect
-    gfft!(sgn, hy, complex.(_hx); a, b, r, Isort = true, Osort = true, method, boundary)
+
+    hy = gfft(sgn, complex.(_hx); a, b, r, Isort = true, Osort = true, method, boundary)
 
     return y, hy
+end
+
+function gfft(sgn, x::AbstractArray, HX::AbstractMatrix; dims = 1, r = 1, kwargs...)
+    results = mapslices(hx -> gfft(sgn, x, hx; r, kwargs...)[2], HX; dims)
+    y = generate_freq_array(x, r)
+
+    return y, results
 end
 
 # —————————————————————————————————— Helper functions —————————————————————————————————— #
